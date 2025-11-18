@@ -265,4 +265,4 @@ docker exec -it kafka kafka-console-consumer --bootstrap-server kafka:29092 --to
   - Choose partition counts according to expected throughput and consumer parallelism.
   - Monitor consumer offsets to ensure consumers are processing messages in time.
 
-If you want, I can add a short example producer/consumer snippet to `user-service` or a new example service and update `k8s/scripts/init.sh` to build its image.
+
