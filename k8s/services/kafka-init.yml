@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-init
+  namespace: microservices  
+spec:
+  
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: kafka-init
+    spec:
+      restartPolicy: OnFailure
+      
+      # Init container to wait for Kafka to be ready
+      initContainers:
+      - name: wait-for-kafka
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Kafka to be ready..."
+          until nc -z kafka:29092; do
+            echo "Kafka not ready yet, waiting..."
+            sleep 5
+          done
+          echo "Kafka is ready!"
+      
+      # Main container to create topics
+      containers:
+      - name: kafka-init
+        image: confluentinc/cp-kafka:7.5.0
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Create topics with proper configuration
+          kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic user-events --partitions 3 --replication-factor 1
+          
+          echo '✅ Topics created successfully!'
+          kafka-topics --bootstrap-server kafka:29092 --list
+        
+        env:
+        - name: KAFKA_BROKER
+          value: "kafka:29092"
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"

@@ -1,0 +1,57 @@
+# Template Kubernetes manifest for a microservice
+# Copy this file to `k8s/services/<your-service>.yml` and replace placeholders.
+# Replace: <SERVICE_NAME>, <IMAGE>, <CONTAINER_PORT>, <REPLICAS>, <NAMESPACE>
+# Example: set <IMAGE> to "myregistry/my-service:latest" (match what you build in `k8s/scripts/init.sh`).
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <SERVICE_NAME>
+  namespace: <NAMESPACE>  # e.g. default or namespace used in this repo
+spec:
+  replicas: <REPLICAS>  # e.g. 1
+  selector:
+    matchLabels:
+      app: <SERVICE_NAME>
+  template:
+    metadata:
+      labels:
+        app: <SERVICE_NAME>
+    spec:
+      containers:
+        - name: <SERVICE_NAME>
+          image: <IMAGE>
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: <CONTAINER_PORT>
+          env:
+            - name: KAFKA_BROKER
+              value: "kafka:29092"  # adjust if your cluster uses a different bootstrap server
+            - name: SERVICE_NAME
+              value: "<SERVICE_NAME>"
+          # Add additional env vars, volumeMounts, resources, probes as needed
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: <SERVICE_NAME>
+  namespace: <NAMESPACE>
+spec:
+  selector:
+    app: <SERVICE_NAME>
+  ports:
+    - protocol: TCP
+      port: <CONTAINER_PORT>
+      targetPort: <CONTAINER_PORT>
+  type: ClusterIP
+
+# Optional: if you want a NodePort or LoadBalancer for direct external access, change `type`.
+
+# Usage notes:
+# - Add this file to `k8s/services/` with a concrete filename like `order-service.yml`.
+# - Update `k8s/scripts/init.sh` to build/tag the image named in <IMAGE>.
+# - Add `kubectl apply -f k8s/services/<your-file>.yml` to `k8s/scripts/start-services.sh`.
+# - Add a corresponding `kafka-topics --create ... --topic <your-topic>` entry in `k8s/services/kafka-init.yml`.
+# - Add `docker rmi -f <IMAGE> || true` to `k8s/scripts/delete-images.sh` for cleanup.
