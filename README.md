@@ -204,7 +204,65 @@ Notes and repository-specific clarifications
 - `k8s/scripts/*` are bash scripts; on Windows use WSL, Git Bash, or run them in CI (Linux) to avoid shell incompatibilities.
 
 
+## Kafka Overview
 
----
+- **What is Kafka:** Apache Kafka is a distributed streaming platform for building real-time data pipelines and streaming applications. It provides durable, partitioned, and replicated logs (topics) that producers write to and consumers read from.
 
-README created by automation to help the team onboard new microservices into this event-driven infra.
+- **Key concepts:**
+  - **Broker:** A Kafka server that stores and serves topic data.
+  - **Topic:** A named stream of records; topics are split into **partitions** for parallelism and scale.
+  - **Producer:** A client that writes messages to topics.
+  - **Consumer:** A client that reads messages from topics; consumers can be grouped into **consumer groups** for coordinated consumption.
+  - **Offset:** A pointer to a position in a partition that identifies a record.
+
+## How to use Kafka in this project
+
+- **Local development (Docker Compose):**
+  - Start the stack (Zookeeper, Kafka, topic init, and `user-service`):
+
+```powershell
+docker compose up --build
+```
+
+  - The `kafka-init` container (see `docker-compose.yml`) runs `kafka-topics` commands to create required topics (e.g. `user-events`). Add or modify topic creation there for local setups.
+
+- **Common CLI commands (execute against the `kafka` container):**
+
+  - List topics:
+
+```powershell
+docker exec -it kafka kafka-topics --bootstrap-server kafka:29092 --list
+```
+
+  - Create a topic:
+
+```powershell
+docker exec -it kafka kafka-topics --bootstrap-server kafka:29092 --create --topic my-topic --partitions 3 --replication-factor 1
+```
+
+  - Produce messages (type and Enter):
+
+```powershell
+docker exec -it kafka kafka-console-producer --bootstrap-server kafka:29092 --topic user-events
+```
+
+  - Consume messages (from beginning):
+
+```powershell
+docker exec -it kafka kafka-console-consumer --bootstrap-server kafka:29092 --topic user-events --from-beginning
+```
+
+  Notes: services inside the Docker network use `kafka:29092`. From the host you can use `localhost:9092` because `9092` is exposed by `docker-compose.yml`.
+
+- **Service integration:**
+  - Services in this repo read the `KAFKA_BROKER` environment variable (see `docker-compose.yml` where `KAFKA_BROKER=kafka:29092`). In Kubernetes, use the cluster DNS name (for example `kafka:29092`) in pod env vars.
+
+- **Kubernetes / Cluster init:**
+  - The `k8s/services/kafka-init.yml` (and the `kafka-init` entry in `docker-compose.yml`) is the place to add `kafka-topics --create` commands so topics are created automatically during deployment.
+
+- **Helpful tips:**
+  - Keep `KAFKA_AUTO_CREATE_TOPICS_ENABLE` disabled in production to avoid accidental topic creation; create topics explicitly.
+  - Choose partition counts according to expected throughput and consumer parallelism.
+  - Monitor consumer offsets to ensure consumers are processing messages in time.
+
+If you want, I can add a short example producer/consumer snippet to `user-service` or a new example service and update `k8s/scripts/init.sh` to build its image.
