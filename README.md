@@ -203,12 +203,7 @@ Notes and repository-specific clarifications
 - The repo uses `k8s/services/` and `k8s/scripts/*.sh` (bash) — prefer editing those files, not new folders named `ks8` or `microservices` (typos seen in some instructions). Use `k8s/services/` for YAMLs and `k8s/scripts/` for the helper scripts.
 - `k8s/scripts/*` are bash scripts; on Windows use WSL, Git Bash, or run them in CI (Linux) to avoid shell incompatibilities.
 
-Need help?
 
-- I created this `README.md` with the steps above. If you want I can also:
-  - Create a `k8s/services/template-service.yml` for the team to copy and fill.
-  - Create a small `order-service` example scaffold in the repo as a template.
-  - Open a PR with the changes.
 
 ---
 
