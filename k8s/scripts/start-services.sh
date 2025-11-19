@@ -13,13 +13,6 @@ echo "--- Deploying Kafka ---"
 kubectl apply -f ../services/kafka.yml
 kubectl wait --for=condition=ready pod -l app=kafka -n microservices --timeout=180s
 
-echo "--- Deploying Kafka Topics (Init Job) ---"
-kubectl apply -f ../services/kafka-init.yml
-
-
-echo "--- Waiting for topics to be created ---"
-kubectl wait --for=condition=complete job/kafka-init -n microservices --timeout=60s
-
 echo "--- Deploying User Service ---"
 kubectl apply -f ../services/user-service.yml
 
