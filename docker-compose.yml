@@ -33,28 +33,30 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'  
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'  
     networks:
       - microservices-net
 
   # Topic Initialization
-  kafka-init:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka-init
-    depends_on:
-      kafka:
-        condition: service_healthy
-    entrypoint: [ '/bin/sh', '-c' ]
-    command: |
-      "
-      # Create topics with proper configuration
-      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic user-events --partitions 3 --replication-factor 1
+  # kafka-init:
+  #   image: confluentinc/cp-kafka:7.5.0
+  #   container_name: kafka-init
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #   entrypoint: [ '/bin/sh', '-c' ]
+  #   command: |
+  #     "
+  #     # Create topics with proper configuration
+  #     kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic user-events --partitions 3 --replication-factor 1
+  #     kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic product-events --partitions 3 --replication-factor 1
+  #     kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic inventory-events --partitions 3 --replication-factor 1
       
-      echo '✅ Topics created successfully!'
-      kafka-topics --bootstrap-server kafka:29092 --list
-      "
-    networks:
-      - microservices-net
+  #     echo '✅ Topics created successfully!'
+  #     kafka-topics --bootstrap-server kafka:29092 --list
+  #     "
+  #   networks:
+  #     - microservices-net
 
   # User Service - Produces user events
   user-service:
@@ -70,8 +72,46 @@ services:
     networks:
       - microservices-net
     depends_on:
-      kafka-init:  
-        condition: service_completed_successfully
+      # kafka-init:  
+      #   condition: service_completed_successfully
+      kafka:                                    
+        condition: service_healthy
+
+# Product Service - Produces product events
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    ports:
+      - "3002:3002"
+    environment:
+      - KAFKA_BROKER=kafka:29092
+      - SERVICE_NAME=product-service
+    networks:
+      - microservices-net
+    depends_on:
+      # kafka-init:  
+      #   condition: service_completed_successfully
+      kafka:                                    
+        condition: service_healthy
+
+#inventory service
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    ports:
+      - "3003:3003"
+    environment:
+      - KAFKA_BROKER=kafka:29092
+      - SERVICE_NAME=inventory-service
+    networks:
+      - microservices-net
+    depends_on:
+      # kafka-init:  
+      #   condition: service_completed_successfully
       kafka:                                    
         condition: service_healthy
 
